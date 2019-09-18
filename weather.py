@@ -9,7 +9,8 @@ import xlwt
 import time
 import datetime
 from config import *
-from old_days_weather import getEveryMonthWeatherList
+from old_15days_weather import getEveryMonthWeatherList
+import os
 
 #https://www.tianqiapi.com/user/login.php   register for account
 #at least 5 account
@@ -87,6 +88,9 @@ class GetWeather:
             return None
 
     def __main__(self):
+        if os.path.exists("30days_weather.xls"):
+            os.remove("30days_weather.xls")
+            print("remove old 30days_weather.xls file success.............")
         start_date = datetime.datetime.now()
         date = "20" + datetime.date.today().strftime("%y-%m")
         cnt = 1
@@ -121,10 +125,9 @@ class GetWeather:
             
             self.cityRow = self.cityRow + 4
             self.result.save(r'./30days_weather.xls')
-
             time.sleep(2)
         end_date = datetime.datetime.now()
-        print(end_date - start_date)
+        print(end_date - start_date,"Congratulations!You get all data success.................")
 
 
 
