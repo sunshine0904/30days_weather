@@ -194,8 +194,21 @@ def fromCityGetCityCode(needCityList):
         print(e,'从城市名字获取城市编码出错了')
         return None
 
+#===========获取未来15天天气===========
+def get_future_15_days_weather(cityid):
+    headers = {'user-agent': UA}
+    base_url="http://tianqi.2345.com/t/q.php?id=" + str(cityid)
+    print(base_url, headers)
+    query = requests.get(base_url, headers=headers)
+    data = query.__dict__
+    print(data["url"])
+
+
+
 #=========== 主函数===================
 def main(cityCode):
     #得到一个城市 给定日期范围的 所有天气数据
-    cityInfoList= manyDateDataList(cityCode)
+    #cityInfoList= manyDateDataList(cityCode)
+    get_future_15_days_weather(60765)
 
+main(60765)
