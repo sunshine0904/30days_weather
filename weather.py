@@ -203,7 +203,7 @@ def get_future_15_days_weather(cityid):
     base_url="http://tianqi.2345.com/t/q.php?id=" + str(cityid)
     query = requests.get(base_url, headers=headers)
     data = query.__dict__
-    print("future data:------------",base_url, data["url"],headers)
+    print("future data:------------",base_url, data["url"])
     day15_wea=requests.get(data["url"],headers=headers)
     #获取数据失败
     if day15_wea.status_code != 200:
