@@ -2,5 +2,6 @@ pip install requests
 pip install bs4
 pip install lxml
 pip install xlwt
-python %~dp0weather.py
+cd /d %~dp0
+python weather.py
 pause

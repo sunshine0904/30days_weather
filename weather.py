@@ -240,21 +240,24 @@ def get_future_15_days_weather(cityid):
 def write_data_to_excel(sheet, city, row, old_data, future_data):
     sheet.write(row, 0, city)  #写当前城市名
     column = 1
-    for i in range(len(old_data)):
-        sheet.write(row, column, old_data[i][0])
-        sheet.write(row + 1, column, old_data[i][3])
-        sheet.write(row + 2, column, old_data[i][2])
-        sheet.write(row + 3, column, old_data[i][1])
-        column = column + 1
-    
-    for cnt in range(0, len(future_data)-1):
-        sheet.write(row, column, future_data[cnt]["date"])
-        sheet.write(row + 1, column, future_data[cnt]["status"])
-        sheet.write(row + 2, column, future_data[cnt]["low"] + u'\u2103')
-        sheet.write(row + 3, column, future_data[cnt]["high"])
-        #sheet.write(row + 3, column, future_data[cnt]["high"] + u'\u2103')
-        column = column + 1
-    
+	
+    if old_data != None:
+        for i in range(len(old_data)):
+            sheet.write(row, column, old_data[i][0])
+            sheet.write(row + 1, column, old_data[i][3])
+            sheet.write(row + 2, column, old_data[i][2])
+            sheet.write(row + 3, column, old_data[i][1])
+            column = column + 1
+	
+    if future_data!=None:
+        for cnt in range(0, len(future_data)-1):
+            sheet.write(row, column, future_data[cnt]["date"])
+            sheet.write(row + 1, column, future_data[cnt]["status"])
+            sheet.write(row + 2, column, future_data[cnt]["low"] + u'\u2103')
+            sheet.write(row + 3, column, future_data[cnt]["high"])
+            #sheet.write(row + 3, column, future_data[cnt]["high"] + u'\u2103')
+            column = column + 1
+
 
 #=========== 主函数===================
 def main():
@@ -270,18 +273,20 @@ def main():
     start_date = datetime.datetime.now()
     mdate = "20" + datetime.date.today().strftime("%y-%m")
     cnt=1
+    
     for key,val in weatherCityCode.items():
         print("%d--------------%s--%s-------------"%(cnt,key,val))
         old_data=getEveryMonthWeatherList(val, mdate, 0)
         future_data=get_future_15_days_weather(val)
         print("%d--------------%s--%s-------------\n"%(cnt,key,val))
-        if old_data==None or future_data==None:
+        if old_data==None and future_data == None:
             continue
         write_data_to_excel(sheet, key, cityRow, old_data, future_data)
         cityRow = cityRow + 4
         result.save(r'./30days_weather.xls')
         cnt+=1
         time.sleep(0.5)
+    
     result.save(r'./30days_weather.xls')
     end_date=datetime.datetime.now()
     print("\n",end_date - start_date,"(^_^)(^_^)(^_^)All city weather data get success!\n")
