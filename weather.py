@@ -215,6 +215,7 @@ def get_future_15_days_weather(cityid):
     
     #day7=res.find_all(id="day7info")[0].find_all(class_="clearfix has_aqi")[0].find_all(class_="week-detail-now")
     day7=res.find_all(id="day7info")[0].find_all("ul")[0].find_all(class_="week-detail-now")
+    day7.append(res.find_all(id="day7info")[0].find_all("ul")[0].find_all(class_="week-detail-now lastd"))
     for cnt in range(0, len(day7)-1):
         mdate=day7[cnt].find("strong").get_text()
         status=day7[cnt].b.string
@@ -224,6 +225,7 @@ def get_future_15_days_weather(cityid):
         wea_list.append(wea_item)
         #print(mdate[0:7], status, low, high)
     
+    #TODO:增加lastd天气 
     day8=res.find_all("ul","li",class_="clearfix has_aqi has_aqi_wind")
     for cnt in range(0,len(day8[0].find_all("li"))-1):
         current=day8[0].find_all("li")[cnt]
