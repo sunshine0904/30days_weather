@@ -22,7 +22,7 @@ def getCityCodeAjax(Mcount=MYCOUNT):
         except Exception as e:
             print(e,'error')
 
-        print(r.status_code, r.url)
+        #print(r.status_code, r.url)
         if r.status_code == 200:
             # print(r.text)
             pattern=r'var prov=new Array.*?台湾-36\'.*?(.*?)var provqx'
@@ -80,7 +80,7 @@ def formNeedCityList():
     if os.path.exists("need_city.txt") == False:
         return None
     need_city = {} 
-    f = open("need_city.txt", "r")
+    f = open("need_city.txt", "r", encoding="utf-8")
     for line_content in f:
         list = f.readlines()
     
@@ -194,6 +194,7 @@ def write_data_to_excel(sheet, city, row, old_data, future_data):
 
 #得到一个城市 给定日期范围的 所有天气数据
 def main():
+    print("^_^^_^^_^Usage:add city name to need_city.txt. if need_city.txt is empty,get all city.")
     #记录开始时间
     start_date=datetime.datetime.now()
 
@@ -210,6 +211,11 @@ def main():
     
     #构建需要获取的城市列表
     need_city = formNeedCityList()
+
+    #如果需要获取的城市列表为空则默认获取所有城市
+    if len(need_city) == 0:
+        need_city = weatherCityCode
+        print("need city list is empty!Get all city data.")
 
     #开始获取数据并写入表格
     for key,val in need_city.items():
