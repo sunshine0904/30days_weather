@@ -104,7 +104,7 @@ def get_old_15_days_weather(cityid):
     headers = {'user-agent': UA}
     start_date = datetime.datetime.now()
     mdate = "20" + datetime.date.today().strftime("%y%m")
-    base_url = "http://tianqi.2345.com/t/wea_history/js/202002/" + str(cityid) + "_" + str(mdate) + ".js"
+    base_url = "http://tianqi.2345.com/t/wea_history/js/202007/" + str(cityid) + "_" + str(mdate) + ".js"
     print("old data:------------",base_url)
     old_data = requests.get(base_url, headers = headers)
     if old_data.status_code != 200:
@@ -137,6 +137,7 @@ def get_future_15_days_weather(cityid):
     wea_list=[]
     wea_item={}
     
+    print(res.find_all(class_="five-days-item"))#get future 15 days weather success
     #day7=res.find_all(id="day7info")[0].find_all(class_="clearfix has_aqi")[0].find_all(class_="week-detail-now")
     day7=res.find_all(id="day7info")[0].find_all("ul")[0].find_all(class_="week-detail-now")
     day7.append(res.find_all(id="day7info")[0].find_all("ul")[0].find_all(class_="week-detail-now lastd"))
