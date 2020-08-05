@@ -8,6 +8,9 @@ import datetime
 from bs4 import BeautifulSoup
 import xlwt
 
+#休眠时间
+SLEEP_INTERVAL=0.6
+
 MYCOUNT=0
 # =============得到城市和对应的编码，这个开始运行，把数据保存到 config.py文件中，以后就不用运行了 这个数据是死的，一般不会变
 def getCityCodeAjax(Mcount=MYCOUNT):
@@ -104,7 +107,7 @@ def get_old_15_days_weather(cityid):
     headers = {'user-agent': UA}
     start_date = datetime.datetime.now()
     mdate = "20" + datetime.date.today().strftime("%y%m")
-    base_url = "http://tianqi.2345.com/t/wea_history/js/202007/" + str(cityid) + "_" + str(mdate) + ".js"
+    base_url = "http://tianqi.2345.com/t/wea_history/js/" + str(mdate) + "/" + str(cityid) + "_" + str(mdate) + ".js"
     print("old data:------------",base_url)
     old_data = requests.get(base_url, headers = headers)
     if old_data.status_code != 200:
@@ -137,32 +140,21 @@ def get_future_15_days_weather(cityid):
     wea_list=[]
     wea_item={}
     
-    print(res.find_all(class_="five-days-item"))#get future 15 days weather success
-    #day7=res.find_all(id="day7info")[0].find_all(class_="clearfix has_aqi")[0].find_all(class_="week-detail-now")
-    day7=res.find_all(id="day7info")[0].find_all("ul")[0].find_all(class_="week-detail-now")
-    day7.append(res.find_all(id="day7info")[0].find_all("ul")[0].find_all(class_="week-detail-now lastd"))
-    for cnt in range(0, len(day7)-1):
-        mdate=day7[cnt].find("strong").get_text().strip()
-        status=day7[cnt].b.string
-        low=day7[cnt].i.find(class_="blue").string
-        high=day7[cnt].i.find(class_="red").string
-        wea_item={"date":mdate[0:6],"status":status,"low":low,"high":high}
+    #print(res.find_all(class_="five-days-item"))#get future 15 days weather success
+    day15=res.find_all(name="div", attrs={"class":"five-days"})[0].find_all("li")
+    for cnt in range(0, len(day15)-1):
+        mdate=day15[cnt].find(class_="day-date").get_text().strip()
+        tempture=day15[cnt].find(class_="tem-show").get_text().strip()
+        status=day15[cnt].find_all(class_="how-day")[0].get_text()
+        low=tempture[0:2]
+        high=tempture[len(tempture)-3 : len(tempture)-1]
+        
+        #print((mdate[0:2] + "月" + mdate[3:5] + "日"), low, high, status)
+        wea_item={"date":(mdate[0:2] + "月" + mdate[3:5] + "日"),"status":status,"low":low,"high":high}
         wea_list.append(wea_item)
-        #print(mdate[0:7], status, low, high)
     
-    #TODO:增加lastd天气 
-    day8=res.find_all("ul","li",class_="clearfix has_aqi has_aqi_wind")
-    for cnt in range(0,len(day8[0].find_all("li"))-1):
-        current=day8[0].find_all("li")[cnt]
-        mdate=current.find("strong").get_text().strip()
-        status=current.b.string
-        low=current.i.find(class_="blue").string
-        high=current.i.find(class_="red").string
-        #print(mdate[0:7],status,low,high)
-        wea_item={"date":mdate[0:6],"status":status,"low":low,"high":high}
-        wea_list.append(wea_item)
     return wea_list
-
+    
 #==========写数据====================
 def write_data_to_excel(sheet, city, row, old_data, future_data):
     sheet.write(row, 0, city)  #写当前城市名
@@ -188,7 +180,7 @@ def write_data_to_excel(sheet, city, row, old_data, future_data):
             sheet.write(row, column, "%d月%d日"%(mdate.tm_mon, mdate.tm_mday))
             sheet.write(row + 1, column, future_data[cnt]["status"])
             sheet.write(row + 2, column, future_data[cnt]["low"] + u'\u2103')
-            sheet.write(row + 3, column, future_data[cnt]["high"])
+            sheet.write(row + 3, column, future_data[cnt]["high"] + u'\u2103')
             #sheet.write(row + 3, column, future_data[cnt]["high"] + u'\u2103')
             column = column + 1
 
@@ -196,13 +188,11 @@ def write_data_to_excel(sheet, city, row, old_data, future_data):
 #得到一个城市 给定日期范围的 所有天气数据
 def main():
     print("^_^^_^^_^Usage:add city name to need_city.txt. if need_city.txt is empty,get all city.")
+    
     #记录开始时间
     start_date=datetime.datetime.now()
-
-    #删除老的数据
-    if os.path.exists("30days_weather.xls"):
-        os.remove("30days_weather.xls")
-        print("remove old 30days_weather.xls file success.............")
+    dt = time.strptime(str(start_date)[0:19], '%Y-%m-%d %H:%M:%S')
+    file_name_str = "%s年%s月%s日_%s时%s分_weather.xls"%(str(dt.tm_year), str(dt.tm_mon), str(dt.tm_mday), str(dt.tm_hour), str(dt.tm_min)) 
 
     #创建数据表格
     result= xlwt.Workbook(encoding='utf-8', style_compression=0)
@@ -228,12 +218,12 @@ def main():
             continue
         write_data_to_excel(sheet, key, cityRow, old_data, future_data)
         cityRow = cityRow + 4
-        result.save(r'./30days_weather.xls')
+        result.save(file_name_str)
         cnt+=1
-        time.sleep(0.5)
+        time.sleep(SLEEP_INTERVAL)
     
     #获取结束保存数据
-    result.save(r'./30days_weather.xls')
+    result.save(file_name_str)
 
     #输出获取资源消耗的时间
     end_date=datetime.datetime.now()
