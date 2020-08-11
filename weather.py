@@ -130,6 +130,12 @@ def get_future_15_days_weather(cityid):
     base_url="http://tianqi.2345.com/t/q.php?id=" + str(cityid)
     query = requests.get(base_url, headers=headers)
     data = query.__dict__
+    if (cityid == "54401"):
+        data["url"] = "http://tianqi.2345.com/zhang/54401.htm"
+    
+    if (cityid == "60651"):
+        data["url"] = "http://tianqi.2345.com/tongshi/60651.htm"
+    
     print("future data:------------",data["url"])
     day15_wea=requests.get(data["url"],headers=headers)
     #获取数据失败
