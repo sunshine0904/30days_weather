@@ -117,10 +117,52 @@ def get_old_15_days_weather(cityid):
     pattern=r'var weather_str=(.*?),{}]'
     newPattern=re.compile(pattern,re.S)
     myAllList = re.findall(newPattern, old_data.text)[0] #得到完整的就送格式数据
+    #print(myAllList)
     pattern=r"ymd:'(.*?)',bWendu:'(.*?)',yWendu:'(.*?)',tianqi:'(.*?)',fengxiang:'(.*?)',fengli:'(.*?)'"
     old_data_list = re.compile(pattern, re.S).findall(myAllList)
     #print(old_data_list)
     return old_data_list
+
+def get_future_40_days_weather(cityid):
+    headers = {'user-agent': UA}
+    base_url="http://tianqi.2345.com/t/q.php?id=" + str(cityid)
+    query = requests.get(base_url, headers=headers)
+    data = query.__dict__
+    if (cityid == "54401"):
+        data["url"] = "http://tianqi.2345.com/zhang/54401.htm"
+    
+    if (cityid == "60651"):
+        data["url"] = "http://tianqi.2345.com/tongshi/60651.htm"
+    
+    print("future data:------------",data["url"])
+    forty_wea=requests.get(data["url"],headers=headers)
+    if forty_wea.status_code != 200:
+        print("Warning!!!!!!!!!!!!!!!City:%s future 15 days weather get fail.\n"%cityid)
+        return None
+    pattern=r'var fortyData=(.*?)]'
+    forty_wea_str=re.findall(re.compile(pattern, re.S), forty_wea.text)[0]
+    #print(forty_wea_str)
+    pattern=r'"time":(.*?),"date":(.*?),"weather":"(.*?)","day_img":(.*?),"day_temp":"(.*?)","night_temp":"(.*?)"'
+    forty_wea_list=re.compile(pattern, re.S).findall(forty_wea_str)
+    wea_list=[]
+    wea_item={}
+    for cnt in range(0, len(forty_wea_list)):
+        low=None
+        high=None
+        date=forty_wea_list[cnt][1].encode('utf-8').decode('unicode_escape')
+        date=date[1:len(date)-1]
+        weather=forty_wea_list[cnt][2].encode('utf-8').decode('unicode_escape')
+        low=forty_wea_list[cnt][5]
+        high=forty_wea_list[cnt][4]
+        #print(date, weather,low,high)
+        if high == "":
+            continue
+        if low == "":
+            continue
+        wea_item={"date":date, "status":weather, "low":low, "high":high}
+        wea_list.append(wea_item)
+    return wea_list
+    
 
 
 
@@ -138,6 +180,7 @@ def get_future_15_days_weather(cityid):
     
     print("future data:------------",data["url"])
     day15_wea=requests.get(data["url"],headers=headers)
+    
     #获取数据失败
     if day15_wea.status_code != 200:
         print("Warning!!!!!!!!!!!!!!!City:%s future 15 days weather get fail.\n"%cityid)
@@ -146,8 +189,9 @@ def get_future_15_days_weather(cityid):
     wea_list=[]
     wea_item={}
     
-    #print(res.find_all(class_="five-days-item"))#get future 15 days weather success
-    day15=res.find_all(name="div", attrs={"class":"five-days"})[0].find_all("li")
+    #print(res.find_all(class_="hours24-list-item"))#get future 15 days weather success
+    day15=res.find_all(name="ul", attrs={"class":"hours24-list wea-white-icon"})[0].find_all("li")
+    #print(type(day15), len(day15),day15[0],day15[0].find(class_=""))
     for cnt in range(0, len(day15)-1):
         mdate=day15[cnt].find(class_="day-date").get_text().strip()
         tempture=day15[cnt].find(class_="tem-show").get_text().strip()
@@ -179,7 +223,7 @@ def write_data_to_excel(sheet, city, row, old_data, future_data):
             sheet.write(row + 2, column, old_data[i][2])
             sheet.write(row + 3, column, old_data[i][1])
             column = column + 1
-	
+    
     if future_data!=None:
         for cnt in range(0, len(future_data)-1):
             mdate = time.strptime(future_data[cnt]["date"], "%m月%d日")
@@ -187,7 +231,6 @@ def write_data_to_excel(sheet, city, row, old_data, future_data):
             sheet.write(row + 1, column, future_data[cnt]["status"])
             sheet.write(row + 2, column, future_data[cnt]["low"] + u'\u2103')
             sheet.write(row + 3, column, future_data[cnt]["high"] + u'\u2103')
-            #sheet.write(row + 3, column, future_data[cnt]["high"] + u'\u2103')
             column = column + 1
 
 
@@ -218,7 +261,8 @@ def main():
     for key,val in need_city.items():
         print("%d--------------%s--%s-------------"%(cnt,key,val))
         old_data = get_old_15_days_weather(val)
-        future_data=get_future_15_days_weather(val)
+        #future_data=get_future_15_days_weather(val)
+        future_data=get_future_40_days_weather(val)
         print("%d--------------%s--%s-------------\n"%(cnt,key,val))
         if old_data==None and future_data == None:
             continue
