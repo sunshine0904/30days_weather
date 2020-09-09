@@ -7,17 +7,18 @@ import time
 import datetime
 from bs4 import BeautifulSoup
 import xlwt
+import sys
 
+need_city_file="need_city.txt"
 #休眠时间
-SLEEP_INTERVAL=0.6
-
+SLEEP_INTERVAL=1
 MYCOUNT=0
+
 # =============得到城市和对应的编码，这个开始运行，把数据保存到 config.py文件中，以后就不用运行了 这个数据是死的，一般不会变
 def getCityCodeAjax(Mcount=MYCOUNT):
     global MYCOUNT
     try:
-        # query = {'app': 'shopsearch', 'ie': '	utf8',
-        #          }
+        # query = {'app': 'shopsearch', 'ie': '	utf8',}
         requestFirst = 'http://tianqi.2345.com/js/citySelectData.js'
         headers = {'user-agent': UA}
         try:
@@ -29,7 +30,6 @@ def getCityCodeAjax(Mcount=MYCOUNT):
         if r.status_code == 200:
             # print(r.text)
             pattern=r'var prov=new Array.*?台湾-36\'.*?(.*?)var provqx'
-            # pattern =''
             newPattern=re.compile(pattern,re.S)
             myAllList = re.findall(newPattern, r.text)[0] #得到完整的就送格式数据
             # print(len(myAllList),type(myAllList), myAllList)
@@ -80,10 +80,10 @@ def cityCodeList(cityCodeList=getCityCodeAjax()):
 
 #================从need_city.txt中获取需要的城市列表===========
 def formNeedCityList():
-    if os.path.exists("need_city.txt") == False:
-        return None
     need_city = {} 
-    f = open("need_city.txt", "r", encoding="utf-8")
+    if os.path.exists(need_city_file) == False:
+        return need_city
+    f = open(need_city_file, "r", encoding="utf-8")
     for line_content in f:
         list = f.readlines()
     
@@ -123,6 +123,7 @@ def get_old_15_days_weather(cityid):
     #print(old_data_list)
     return old_data_list
 
+#============获取未来40天的天气=============
 def get_future_40_days_weather(cityid):
     headers = {'user-agent': UA}
     base_url="http://tianqi.2345.com/t/q.php?id=" + str(cityid)
@@ -163,48 +164,6 @@ def get_future_40_days_weather(cityid):
         wea_list.append(wea_item)
     return wea_list
     
-
-
-
-#===========获取未来15天天气===========
-def get_future_15_days_weather(cityid):
-    headers = {'user-agent': UA}
-    base_url="http://tianqi.2345.com/t/q.php?id=" + str(cityid)
-    query = requests.get(base_url, headers=headers)
-    data = query.__dict__
-    if (cityid == "54401"):
-        data["url"] = "http://tianqi.2345.com/zhang/54401.htm"
-    
-    if (cityid == "60651"):
-        data["url"] = "http://tianqi.2345.com/tongshi/60651.htm"
-    
-    print("future data:------------",data["url"])
-    day15_wea=requests.get(data["url"],headers=headers)
-    
-    #获取数据失败
-    if day15_wea.status_code != 200:
-        print("Warning!!!!!!!!!!!!!!!City:%s future 15 days weather get fail.\n"%cityid)
-        return None
-    res=BeautifulSoup(day15_wea.content, "lxml")
-    wea_list=[]
-    wea_item={}
-    
-    #print(res.find_all(class_="hours24-list-item"))#get future 15 days weather success
-    day15=res.find_all(name="ul", attrs={"class":"hours24-list wea-white-icon"})[0].find_all("li")
-    #print(type(day15), len(day15),day15[0],day15[0].find(class_=""))
-    for cnt in range(0, len(day15)-1):
-        mdate=day15[cnt].find(class_="day-date").get_text().strip()
-        tempture=day15[cnt].find(class_="tem-show").get_text().strip()
-        status=day15[cnt].find_all(class_="how-day")[0].get_text()
-        low=tempture[0:2]
-        high=tempture[len(tempture)-3 : len(tempture)-1]
-        
-        #print((mdate[0:2] + "月" + mdate[3:5] + "日"), low, high, status)
-        wea_item={"date":(mdate[0:2] + "月" + mdate[3:5] + "日"),"status":status,"low":low,"high":high}
-        wea_list.append(wea_item)
-    
-    return wea_list
-    
 #==========写数据====================
 def write_data_to_excel(sheet, city, row, old_data, future_data):
     sheet.write(row, 0, city)  #写当前城市名
@@ -241,7 +200,7 @@ def main():
     #记录开始时间
     start_date=datetime.datetime.now()
     dt = time.strptime(str(start_date)[0:19], '%Y-%m-%d %H:%M:%S')
-    file_name_str = "%s年%s月%s日_%s时%s分_weather.xls"%(str(dt.tm_year), str(dt.tm_mon), str(dt.tm_mday), str(dt.tm_hour), str(dt.tm_min)) 
+    file_name_str = "%s%s%s_%s%s_weather.xls"%(str(dt.tm_year), str(dt.tm_mon), str(dt.tm_mday), str(dt.tm_hour), str(dt.tm_min)) 
 
     #创建数据表格
     result= xlwt.Workbook(encoding='utf-8', style_compression=0)
@@ -251,7 +210,6 @@ def main():
     
     #构建需要获取的城市列表
     need_city = formNeedCityList()
-
     #如果需要获取的城市列表为空则默认获取所有城市
     if len(need_city) == 0:
         need_city = weatherCityCode
@@ -259,11 +217,12 @@ def main():
 
     #开始获取数据并写入表格
     for key,val in need_city.items():
-        print("%d--------------%s--%s-------------"%(cnt,key,val))
+        print(str(time.strftime('%Y.%m.%d-%H:%M:%S'))+"--------%d--------------%s--%s-------------"%(cnt,key,val))
         old_data = get_old_15_days_weather(val)
         #future_data=get_future_15_days_weather(val)
         future_data=get_future_40_days_weather(val)
-        print("%d--------------%s--%s-------------\n"%(cnt,key,val))
+        print(str(time.strftime('%Y.%m.%d-%H:%M:%S'))+"--------%d--------------%s--%s-------------\n"%(cnt,key,val))
+        sys.stdout.flush()
         if old_data==None and future_data == None:
             continue
         write_data_to_excel(sheet, key, cityRow, old_data, future_data)
@@ -278,5 +237,6 @@ def main():
     #输出获取资源消耗的时间
     end_date=datetime.datetime.now()
     print("\n",end_date - start_date,"(^_^)(^_^)(^_^)All city weather data get success!\n")
+
 
 main()
