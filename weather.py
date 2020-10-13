@@ -48,7 +48,7 @@ def get_current_month_history_weather(cityid):
         return None
     
     old_data_list = []
-    soup = BeautifulSoup(old_data.text, "lxml")
+    soup = BeautifulSoup(old_data.text, "html.parser")
     table = soup.table
     tr_attr = table.find_all("tr")
     for tr in tr_attr:
