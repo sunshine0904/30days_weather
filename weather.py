@@ -181,7 +181,7 @@ def main():
         future_data=get_future_40_days_weather(val)
         print(str(time.strftime('%Y.%m.%d-%H:%M:%S'))+"--------%d--------------%s--%s-------------\n"%(cnt,key,val))
         sys.stdout.flush()
-        if old_data==None and future_data == None:
+        if len(old_data)==0 and len(future_data) == 0:
             continue
         write_data_to_excel(sheet, key, cityRow, old_data, future_data)
         cityRow = cityRow + 4
